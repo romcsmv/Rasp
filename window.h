@@ -1,7 +1,6 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 
-
 #include <QMainWindow>
 
 namespace Ui {
