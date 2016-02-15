@@ -30,12 +30,15 @@ private slots:
     void onDone();
     void rescale();
 
+    void on_horizontalSlider_valueChanged(int value);
+
 private:
     Ui::Window *ui;
     QThread *calc_thread;
     Calculator *calculator;
 
-    int old_slider_scale = 100;
+    int old_y_slider_scale = 100;
+    int old_x_slider_scale = 100;
 };
 
 #endif // WINDOW_H

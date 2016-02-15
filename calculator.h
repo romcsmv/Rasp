@@ -28,6 +28,12 @@ signals:
 public slots:
     void start();
 
+    void setAllowOutToFile(bool allow);
+    void setInvertPolicy(bool invert_first, bool invert_second);
+
+private:
+    void saveToFile(const QString &file_out);
+
 private:
     QString file_in;
     QString file_out;
@@ -35,6 +41,12 @@ private:
     double to;
     double avg;
     QVector<double> T, U, I;
+
+    bool allow_out_to_file = false;
+    struct {
+        bool invert_first = false;
+        bool invert_second = false;
+    } invert_policy;
 };
 
 #endif // CALCULATOR_H

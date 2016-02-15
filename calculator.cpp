@@ -66,34 +66,47 @@ void Calculator::start()
         return;
     }
 
-    QFile file_output(file_out);
-    if (!file_output.open(QIODevice::WriteOnly))
+    QStringList lines;
     {
-        emit done();
-        return;
-    }
-
-    QTextStream out(&file_output);
-    out.setLocale(QLocale(QLocale::Ukrainian, QLocale::Ukraine));
-    out.setRealNumberPrecision(8);
-
-    QTextStream file_stream(&file);
-    QString buf = file_stream.readLine().trimmed();
-    if (buf.isEmpty())
-    {
-        buf = file_stream.readLine().trimmed();
+        QTextStream file_stream(&file);
+        QString buf = file_stream.readAll();
+        lines = buf.split('\n');
     }
 
     QList<group1> list1;
 
     int count = 0;
 
-    while(!buf.isEmpty())
+
+    std::function<double(double)> first_changer, second_changer;
+    {
+        auto invertor = [] (double x) { return -x; };
+        auto noop = [] (double x) { return x; };
+        if (invert_policy.invert_first)
+        {
+            first_changer = invertor;
+        }
+        else
+        {
+            first_changer = noop;
+        }
+
+        if (invert_policy.invert_second)
+        {
+            second_changer = invertor;
+        }
+        else
+        {
+            second_changer = noop;
+        }
+    }
+
+    foreach(const QString &const_buf, lines)
     {
         count++;
-        emit progress(count, 30000);
+        emit progress(count, lines.size());
 
-
+        QString buf(const_buf);
         QTextStream s1(&buf);
         group1 tmp;
         s1 >> tmp.a >> tmp.b >> tmp.c;
@@ -104,15 +117,8 @@ void Calculator::start()
         {
             double
                     t = average(list1, get_a),
-                    u = average(list1, get_b),
-                    i = std::abs(average(list1, get_c));
-            out
-                    << t
-                    << "\t"
-                    << u
-                    << "\t"
-                    << i
-                    << "\r\n";
+                    u = first_changer(average(list1, get_b)),
+                    i = second_changer(average(list1, get_c));
             T << t;
             U << u;
             I << i;
@@ -122,9 +128,48 @@ void Calculator::start()
         {
             list1.pop_back();
         }
+    }
 
-        buf = file_stream.readLine().trimmed();
+    if (allow_out_to_file)
+    {
+        saveToFile(file_out);
+    }
+
+    emit done();
+}
+
+void Calculator::setAllowOutToFile(bool allow)
+{
+    allow_out_to_file = allow;
+}
+
+void Calculator::setInvertPolicy(bool invert_first, bool invert_second)
+{
+    invert_policy.invert_first = invert_first;
+    invert_policy.invert_second = invert_second;
+}
+
+void Calculator::saveToFile(const QString &file_out)
+{
+    QFile file_output(file_out);
+    if (!file_output.open(QIODevice::WriteOnly))
+    {
+        return;
+    }
+
+    QTextStream out(&file_output);
+    out.setLocale(QLocale(QLocale::Ukrainian, QLocale::Ukraine));
+    out.setRealNumberPrecision(8);
+
+    for (int i = 0; i < T.size() && i < U.size() && i < I.size(); i++)
+    {
+        out
+                << T[i]
+                << "\t"
+                << U[i]
+                << "\t"
+                << I[i]
+                << "\r\n";
     }
     out.flush();
-    emit done();
 }

@@ -34,7 +34,11 @@ Window::Window(QWidget *parent)
     connect(calculator, SIGNAL(progress(int,int)), this, SLOT(onProgress(int,int)));
     connect(calculator, SIGNAL(done()), this, SLOT(onDone()));
     connect(ui->btnRescale, SIGNAL(released()), this, SLOT(rescale()));
+    connect(ui->allow_save_to_file, &QCheckBox::toggled, ui->output_filename, &QLineEdit::setEnabled);
+    connect(ui->allow_save_to_file, &QCheckBox::toggled, calculator, &Calculator::setAllowOutToFile);
 
+    ui->allow_save_to_file->setChecked(false);
+    ui->btnRescale->setIcon(qApp->style()->standardIcon(QStyle::SP_BrowserReload));
     ui->progressBar->hide();
 }
 
@@ -62,7 +66,7 @@ void Window::on_btnStart_clicked()
         }
 
         QFile file_out(ui->output_filename->text());
-        if (!file_out.open(QIODevice::WriteOnly))
+        if (ui->allow_save_to_file->isChecked() && !file_out.open(QIODevice::WriteOnly))
         {
             QMessageBox::critical(this, ui->output_filename->text(), "Не можу відкрити вихідний файл.", QMessageBox::Ok);
             return;
@@ -77,6 +81,7 @@ void Window::on_btnStart_clicked()
                         ui->spin_from->value(),
                         ui->spin_to->value(),
                         ui->spin_average->value());
+    calculator->setInvertPolicy(ui->invert_1->isChecked(), ui->invert_2->isChecked());
     emit beginCalc();
 }
 
@@ -114,9 +119,13 @@ void Window::onDone()
 void Window::rescale()
 {
     ui->verticalSlider->blockSignals(true);
-    old_slider_scale = 100;
+    ui->horizontalSlider->blockSignals(true);
+    old_y_slider_scale = 100;
+    old_x_slider_scale = 100;
     ui->verticalSlider->setValue(100);
+    ui->horizontalSlider->setValue(100);
     ui->verticalSlider->blockSignals(false);
+    ui->horizontalSlider->blockSignals(false);
 
     ui->plot->rescaleAxes();
     ui->plot->replot();
@@ -126,13 +135,27 @@ void Window::on_verticalSlider_valueChanged(int value)
 {
     QCPRange range = ui->plot->yAxis->range();
 
-    double real_size = range.size() / old_slider_scale;
+    double real_size = range.size() / old_y_slider_scale;
     double new_size = real_size * value;
 
-    old_slider_scale = value;
+    old_y_slider_scale = value;
 
     ui->plot->yAxis->setRange(QCPRange(range.center() - new_size / 2, range.center() + new_size / 2));
     ui->plot->yAxis2->setRange(QCPRange(range.center() - new_size / 2, range.center() + new_size / 2));
+    ui->plot->replot();
+}
+
+void Window::on_horizontalSlider_valueChanged(int value)
+{
+    QCPRange range = ui->plot->xAxis->range();
+
+    double real_size = range.size() / old_x_slider_scale;
+    double new_size = real_size * value;
+
+    old_x_slider_scale = value;
+
+    ui->plot->xAxis->setRange(QCPRange(range.center() - new_size / 2, range.center() + new_size / 2));
+    ui->plot->xAxis2->setRange(QCPRange(range.center() - new_size / 2, range.center() + new_size / 2));
     ui->plot->replot();
 }
 
@@ -148,7 +171,7 @@ void Window::on_fileOpenButton_clicked()
     }
     if (file_dialog->exec())
     {
-        if (!file_dialog->selectedFiles().size() > 0)
+        if (!(file_dialog->selectedFiles().size() > 0))
         {
             return;
         }
