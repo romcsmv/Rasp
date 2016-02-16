@@ -174,40 +174,38 @@
         </widget>
        </item>
        <item>
-        <widget class="Line" name="line">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
+        <widget class="QGroupBox" name="invertion">
+         <property name="title">
+          <string>Use data invertion</string>
          </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QRadioButton" name="invert_1">
-         <property name="text">
-          <string>Invert first (blue)</string>
-         </property>
-         <property name="checked">
+         <property name="checkable">
           <bool>true</bool>
          </property>
-         <property name="autoExclusive">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QRadioButton" name="invert_2">
-         <property name="text">
-          <string>Invert second (red)</string>
-         </property>
-         <property name="autoExclusive">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="Line" name="line_2">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_3">
+          <item>
+           <widget class="QRadioButton" name="invert_1">
+            <property name="text">
+             <string>Invert first (blue)</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+            <property name="autoExclusive">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="invert_2">
+            <property name="text">
+             <string>Invert second (red)</string>
+            </property>
+            <property name="autoExclusive">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </item>
        <item>

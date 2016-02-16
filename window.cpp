@@ -81,7 +81,7 @@ void Window::on_btnStart_clicked()
                         ui->spin_from->value(),
                         ui->spin_to->value(),
                         ui->spin_average->value());
-    calculator->setInvertPolicy(ui->invert_1->isChecked(), ui->invert_2->isChecked());
+    calculator->setInvertPolicy(ui->invert_1->isChecked() && ui->invertion->isChecked(), ui->invert_2->isChecked() && ui->invertion->isChecked());
     emit beginCalc();
 }
 
