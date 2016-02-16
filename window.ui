@@ -181,16 +181,55 @@
         </widget>
        </item>
        <item>
-        <widget class="QCheckBox" name="invert_1">
+        <widget class="QRadioButton" name="invert_1">
          <property name="text">
           <string>Invert first (blue)</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+         <property name="autoExclusive">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QCheckBox" name="invert_2">
+        <widget class="QRadioButton" name="invert_2">
          <property name="text">
           <string>Invert second (red)</string>
+         </property>
+         <property name="autoExclusive">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="Line" name="line_2">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="label_4">
+         <property name="text">
+          <string>X axis density:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QSlider" name="x_axis_density">
+         <property name="minimum">
+          <number>5</number>
+         </property>
+         <property name="maximum">
+          <number>30</number>
+         </property>
+         <property name="value">
+          <number>15</number>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
          </property>
         </widget>
        </item>

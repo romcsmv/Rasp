@@ -32,6 +32,8 @@ private slots:
 
     void on_horizontalSlider_valueChanged(int value);
 
+    void on_x_axis_density_valueChanged(int value);
+
 private:
     Ui::Window *ui;
     QThread *calc_thread;

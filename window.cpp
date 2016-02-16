@@ -25,7 +25,7 @@ Window::Window(QWidget *parent)
     ui->plot->addGraph();
     ui->plot->addGraph();
     ui->plot->graph(1)->setPen(QPen(QColor("red")));
-    ui->plot->xAxis->setAutoTickCount(30);
+    ui->plot->xAxis->setAutoTickCount(ui->x_axis_density->value());
 
     ui->plot->setInteraction(QCP::iRangeDrag);
     ui->plot->setInteraction(QCP::iRangeZoom);
@@ -187,4 +187,10 @@ void Window::on_fileOpenButton_clicked()
                                                      .arg(selected.path())
                                                      .arg(selected.baseName())));
     }
+}
+
+void Window::on_x_axis_density_valueChanged(int value)
+{
+    ui->plot->xAxis->setAutoTickCount(value);
+    ui->plot->replot();
 }
