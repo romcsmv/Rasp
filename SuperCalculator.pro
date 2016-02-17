@@ -21,4 +21,6 @@ HEADERS += \
 FORMS += \
     window.ui
 
+include(double_slider/double_slider.pri)
+
 RC_ICONS = Icon.ico
