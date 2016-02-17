@@ -82,7 +82,10 @@
        </widget>
       </item>
       <item row="2" column="0">
-       <widget class="QSlider" name="slider_double">
+       <widget class="DoubleSlider" name="slider_double">
+        <property name="maximum">
+         <number>1000</number>
+        </property>
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
@@ -400,6 +403,11 @@
    <extends>QWidget</extends>
    <header>qcustomplot.h</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>DoubleSlider</class>
+   <extends>QSlider</extends>
+   <header>doubleslider.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

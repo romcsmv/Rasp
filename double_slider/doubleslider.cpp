@@ -140,6 +140,8 @@ bool SecondSliderHandle::event(QEvent *e)
 
         return true;
     }
+    default:
+        break;
     }
     return QLabel::event(e);
 }
