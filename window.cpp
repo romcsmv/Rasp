@@ -112,7 +112,6 @@ void Window::onDone()
 
     ui->groupBox->setEnabled(true);
     ui->progressBar->setValue(100);
-    QMessageBox::information(this, qApp->applicationName(), "Пораховано!", QMessageBox::Ok);
     ui->progressBar->hide();
 }
 
@@ -193,4 +192,59 @@ void Window::on_x_axis_density_valueChanged(int value)
 {
     ui->plot->xAxis->setAutoTickCount(value);
     ui->plot->replot();
+}
+
+void Window::on_btn_dispersion_clicked()
+{
+    QVector<double> array_u, array_i;
+
+    double from = ui->spin_dispersion_from->value();
+    double to = ui->spin_dispersion_to->value();
+
+    const QVector<double> &T = calculator->getT();
+    const QVector<double> &U = calculator->getU();
+    const QVector<double> &I = calculator->getI();
+    for (int i = 0; i < T.size(); i++)
+    {
+        if (T[i] >= from && T[i] <= to)
+        {
+            array_u.push_back(U[i]);
+            array_i.push_back(I[i]);
+        }
+    }
+
+    double av_u = 0;
+    for(double val: array_u)
+    {
+        av_u += val;
+    }
+    av_u /= array_u.size();
+
+    double dispersion_u = 0;
+    for(double val: array_u)
+    {
+        double sub = val - av_u;
+        dispersion_u += sub * sub;
+    }
+    dispersion_u /= array_u.size();
+
+
+    double av_i = 0;
+    for(double val: array_i)
+    {
+        av_i += val;
+    }
+    av_i /= array_i.size();
+
+    double dispersion_i = 0;
+    for(double val: array_i)
+    {
+        double sub = val - av_i;
+        dispersion_i += sub * sub;
+    }
+    dispersion_i /= array_i.size();
+
+    ui->lb_dispersion->setText(QString("U: %1; I: %2;")
+                               .arg(QString::number(dispersion_u, 'f',4))
+                               .arg(QString::number(dispersion_i, 'f',4)));
 }

@@ -34,6 +34,8 @@ private slots:
 
     void on_x_axis_density_valueChanged(int value);
 
+    void on_btn_dispersion_clicked();
+
 private:
     Ui::Window *ui;
     QThread *calc_thread;
