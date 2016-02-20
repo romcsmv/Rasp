@@ -29,6 +29,7 @@ DoubleSlider::DoubleSlider(QWidget *parent)
   setAltValue(maximum());
 
   connect(alt_handle, &SecondSliderHandle::valueChanged, this, &DoubleSlider::altValueChanged);
+
   connect(this, &DoubleSlider::valueChanged, [this] (int new_value) {
       bool move_left = (new_value == maximum());
 

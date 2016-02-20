@@ -9,6 +9,7 @@ class Window;
 
 class QThread;
 class Calculator;
+class QDoubleSpinBox;
 
 class Window : public QMainWindow
 {
@@ -31,15 +32,19 @@ private slots:
     void rescale();
 
     void on_horizontalSlider_valueChanged(int value);
-
     void on_x_axis_density_valueChanged(int value);
-
     void on_btn_dispersion_clicked();
+
+    void onDoubleSliderMoved(int val);
+    void onDoubleSliderAltMoved(int val);
 
 private:
     Ui::Window *ui;
     QThread *calc_thread;
     Calculator *calculator;
+
+    QDoubleSpinBox *select_from = nullptr;
+    QDoubleSpinBox *select_to = nullptr;
 
     int old_y_slider_scale = 100;
     int old_x_slider_scale = 100;

@@ -24,8 +24,14 @@ Window::Window(QWidget *parent)
     ui->setupUi(this);
     ui->plot->addGraph();
     ui->plot->addGraph();
+    ui->plot->addGraph();
+    ui->plot->addGraph();
+
     ui->plot->graph(1)->setPen(QPen(QColor("red")));
     ui->plot->xAxis->setAutoTickCount(ui->x_axis_density->value());
+
+    ui->plot->graph(2)->setPen(QPen(QColor("green")));
+    ui->plot->graph(3)->setPen(QPen(QColor("green")));
 
     ui->plot->setInteraction(QCP::iRangeDrag);
     ui->plot->setInteraction(QCP::iRangeZoom);
@@ -36,6 +42,45 @@ Window::Window(QWidget *parent)
     connect(ui->btnRescale, SIGNAL(released()), this, SLOT(rescale()));
     connect(ui->allow_save_to_file, &QCheckBox::toggled, ui->output_filename, &QLineEdit::setEnabled);
     connect(ui->allow_save_to_file, &QCheckBox::toggled, calculator, &Calculator::setAllowOutToFile);
+
+    connect(ui->slider_double, &DoubleSlider::valueChanged, this, &Window::onDoubleSliderMoved);
+    connect(ui->slider_double, &DoubleSlider::altValueChanged, this, &Window::onDoubleSliderAltMoved);
+
+    connect(ui->chck_dispersion_select, &QCheckBox::toggled, this, [this] (bool checked) {
+        ui->chck_range_select->blockSignals(true);
+        ui->chck_range_select->setChecked(false);
+        ui->chck_range_select->blockSignals(false);
+
+        if (checked)
+        {
+            select_from = ui->spin_dispersion_from;
+            select_to = ui->spin_dispersion_to;
+            ui->slider_double->show();
+        }
+        else
+        {
+            ui->slider_double->hide();
+        }
+    });
+
+    connect(ui->chck_range_select, &QCheckBox::toggled, this, [this] (bool checked) {
+        ui->chck_dispersion_select->blockSignals(true);
+        ui->chck_dispersion_select->setChecked(false);
+        ui->chck_dispersion_select->blockSignals(false);
+
+        if (checked)
+        {
+            select_from = ui->spin_from;
+            select_to = ui->spin_to;
+            ui->slider_double->show();
+        }
+        else
+        {
+            ui->slider_double->hide();
+        }
+    });
+
+    ui->chck_range_select->setChecked(true);
 
     ui->allow_save_to_file->setChecked(false);
     ui->btnRescale->setIcon(qApp->style()->standardIcon(QStyle::SP_BrowserReload));
@@ -245,6 +290,38 @@ void Window::on_btn_dispersion_clicked()
     dispersion_i /= array_i.size();
 
     ui->lb_dispersion->setText(QString("U: %1; I: %2;")
-                               .arg(QString::number(dispersion_u, 'f',4))
-                               .arg(QString::number(dispersion_i, 'f',4)));
+                               .arg(QString::number(dispersion_u, 'f', 4))
+                               .arg(QString::number(dispersion_i, 'f', 4)));
+}
+
+void Window::onDoubleSliderMoved(int val)
+{
+    QCPRange x_range = ui->plot->xAxis->range();
+    QCPRange y_range = ui->plot->yAxis->range();
+
+    double line_pos = x_range.lower + (x_range.size() * val) / (ui->slider_double->maximum() - ui->slider_double->minimum());
+    select_from->setValue(line_pos);
+
+    QVector<double> keys, values;
+    keys << line_pos << line_pos;
+    values << y_range.lower << y_range.upper;
+    ui->plot->graph(2)->setData(keys, values);
+
+    ui->plot->replot();
+}
+
+void Window::onDoubleSliderAltMoved(int val)
+{
+    QCPRange x_range = ui->plot->xAxis->range();
+    QCPRange y_range = ui->plot->yAxis->range();
+
+    double line_pos = x_range.lower + (x_range.size() * val) / (ui->slider_double->maximum() - ui->slider_double->minimum());
+    select_to->setValue(line_pos);
+
+    QVector<double> keys, values;
+    keys << line_pos << line_pos;
+    values << y_range.lower << y_range.upper;
+    ui->plot->graph(3)->setData(keys, values);
+
+    ui->plot->replot();
 }

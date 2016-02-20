@@ -132,11 +132,31 @@
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="label">
-         <property name="text">
-          <string>Show range:</string>
+        <layout class="QHBoxLayout" name="horizontalLayout_6" stretch="1,0">
+         <property name="leftMargin">
+          <number>0</number>
          </property>
-        </widget>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="label">
+           <property name="text">
+            <string>Show range:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="chck_range_select">
+           <property name="text">
+            <string>Slider select</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
        <item>
         <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -275,6 +295,33 @@
         </spacer>
        </item>
        <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_7" stretch="1,0">
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="label_6">
+           <property name="text">
+            <string>Despersion:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="chck_dispersion_select">
+           <property name="text">
+            <string>Slider select</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
         <layout class="QHBoxLayout" name="horizontalLayout_4">
          <property name="topMargin">
           <number>0</number>
@@ -317,8 +364,14 @@
          </property>
          <item>
           <widget class="QPushButton" name="btn_dispersion">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="text">
-            <string>Dispersion</string>
+            <string>Calc</string>
            </property>
           </widget>
          </item>
