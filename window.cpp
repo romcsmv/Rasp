@@ -23,6 +23,18 @@ Window::Window(QWidget *parent)
 
     ui->setupUi(this);
 
+    {
+        auto font = ui->plot->font();
+        font.setPointSize(18);
+        ui->plot->setFont(font);
+        ui->plot->xAxis->setTickLabelFont(font);
+        ui->plot->yAxis->setTickLabelFont(font);
+        ui->plot->yAxis2->setTickLabelFont(font);
+        font.setItalic(true);
+        ui->plot->xAxis->setLabelFont(font);
+        ui->plot->yAxis->setLabelFont(font);
+        ui->plot->yAxis2->setLabelFont(font);
+    }
     ui->plot->addGraph();
     ui->plot->addGraph(ui->plot->xAxis, ui->plot->yAxis2);
     ui->plot->yAxis2->setVisible(true);
