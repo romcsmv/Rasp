@@ -1,6 +1,6 @@
 QT += core gui widgets printsupport
 
-CONFIG += c++11
+CONFIG += c++14
 
 TARGET = SuperCalculator
 CONFIG -= app_bundle

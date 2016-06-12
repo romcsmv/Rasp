@@ -39,6 +39,9 @@ private slots:
     void onDoubleSliderAltMoved(int val);
 
 private:
+    void clearAll();
+
+private:
     Ui::Window *ui;
     QThread *calc_thread;
     Calculator *calculator;

@@ -22,16 +22,20 @@ Window::Window(QWidget *parent)
     calc_thread->start();
 
     ui->setupUi(this);
-    ui->plot->addGraph();
-    ui->plot->addGraph();
-    ui->plot->addGraph();
-    ui->plot->addGraph();
+    for (int i=0; i < 6; i++)
+    {
+        ui->plot->addGraph();
+    }
 
+    ui->plot->graph(1)->setPen(QPen(QColor("blue")));
     ui->plot->graph(1)->setPen(QPen(QColor("red")));
     ui->plot->xAxis->setAutoTickCount(ui->x_axis_density->value());
 
     ui->plot->graph(2)->setPen(QPen(QColor("green")));
     ui->plot->graph(3)->setPen(QPen(QColor("green")));
+
+    ui->plot->graph(4)->setPen(QPen(QBrush(QColor("lime")), 2));
+    ui->plot->graph(5)->setPen(QPen(QBrush(QColor("orange")), 2));
 
     ui->plot->setInteraction(QCP::iRangeDrag);
     ui->plot->setInteraction(QCP::iRangeZoom);
@@ -80,7 +84,7 @@ Window::Window(QWidget *parent)
         }
     });
 
-    ui->chck_range_select->setChecked(true);
+    ui->chck_dispersion_select->setChecked(true);
 
     ui->allow_save_to_file->setChecked(false);
     ui->btnRescale->setIcon(qApp->style()->standardIcon(QStyle::SP_BrowserReload));
@@ -117,6 +121,8 @@ void Window::on_btnStart_clicked()
             return;
         }
     }
+
+    clearAll();
 
     ui->groupBox->setEnabled(false);
     ui->progressBar->setValue(0);
@@ -226,6 +232,12 @@ void Window::on_fileOpenButton_clicked()
         }
         ui->input_filename->setText(selected.absoluteFilePath());
 
+        ui->plot->graph(0)->clearData();
+        ui->spin_from->setValue(0);
+        ui->spin_to->setValue(100);
+        clearAll();
+        ui->plot->replot();
+
         QString out("%1/%2_out.txt");
         ui->output_filename->setText(QDir::cleanPath(out
                                                      .arg(selected.path())
@@ -241,7 +253,8 @@ void Window::on_x_axis_density_valueChanged(int value)
 
 void Window::on_btn_dispersion_clicked()
 {
-    QVector<double> array_u, array_i;
+    QVector<double> array_u, array_i, array_t;
+    QVector<double> u_curve, i_curve;
 
     double from = ui->spin_dispersion_from->value();
     double to = ui->spin_dispersion_to->value();
@@ -255,43 +268,70 @@ void Window::on_btn_dispersion_clicked()
         {
             array_u.push_back(U[i]);
             array_i.push_back(I[i]);
+            array_t.push_back(T[i]);
         }
     }
+    auto n = array_t.size();
 
-    double av_u = 0;
-    for(double val: array_u)
+    double a_i, a_u, b_i, b_u;
     {
-        av_u += val;
+        double sumx = 0;
+        double sumy_u = 0;
+        double sumy_i = 0;
+        double sumx2 = 0;
+        double sumxy_u = 0;
+        double sumxy_i = 0;
+        for(int i = 0; i < n; i++) {
+          sumx += array_t[i];
+          sumy_u += array_u[i];
+          sumy_i += array_i[i];
+          sumx2 += array_t[i]*array_t[i];
+          sumxy_u += array_t[i]*array_u[i];
+          sumxy_i += array_t[i]*array_i[i];
+        }
+        a_u = (n*sumxy_u - (sumx*sumy_u))/(n*sumx2-sumx*sumx);
+        b_u = (sumy_u - a_u*sumx)/n;
+
+        a_i = (n*sumxy_i - (sumx*sumy_i))/(n*sumx2-sumx*sumx);
+        b_i = (sumy_i - a_i*sumx)/n;
     }
-    av_u /= array_u.size();
+
+    ui->text_dispersions->clear();
+    auto u_aver = [a=a_u, b=b_u] (double x) { return a * x + b; };
+    auto i_aver = [a=a_i, b=b_i] (double x) { return a * x + b; };
+    ui->text_dispersions->setPlainText(QString("Average U: %1 * x + %2 \n Average I: %3 * x + %4")
+                                       .arg(a_u, 8, 'f', 5)
+                                       .arg(b_u, 8, 'f', 5)
+                                       .arg(a_i, 8, 'f', 5)
+                                       .arg(b_i, 8, 'f', 5));
+
+    for(int i = 0; i < n; i++)
+    {
+        u_curve.push_back(u_aver(array_t[i]));
+        i_curve.push_back(i_aver(array_t[i]));
+    }
+    ui->plot->graph(4)->setData(array_t, u_curve);
+    ui->plot->graph(5)->setData(array_t, i_curve);
 
     double dispersion_u = 0;
-    for(double val: array_u)
-    {
-        double sub = val - av_u;
-        dispersion_u += sub * sub;
-    }
-    dispersion_u /= array_u.size();
-
-
-    double av_i = 0;
-    for(double val: array_i)
-    {
-        av_i += val;
-    }
-    av_i /= array_i.size();
-
     double dispersion_i = 0;
-    for(double val: array_i)
+    for(auto i = 0; i < n; i++)
     {
-        double sub = val - av_i;
-        dispersion_i += sub * sub;
+        auto val_u = array_u[i];
+        auto val_i = array_i[i];
+        double sub_u = val_u - u_aver(array_t[i]);
+        double sub_i = val_i - i_aver(array_t[i]);
+        dispersion_u += sub_u * sub_u;
+        dispersion_i += sub_i * sub_i;
     }
-    dispersion_i /= array_i.size();
+    dispersion_u /= n;
+    dispersion_i /= n;
 
     ui->lb_dispersion->setText(QString("U: %1; I: %2;")
-                               .arg(QString::number(dispersion_u, 'f', 4))
-                               .arg(QString::number(dispersion_i, 'f', 4)));
+                               .arg(dispersion_u, 0, 'f', 5)
+                               .arg(dispersion_i, 0, 'f', 5));
+
+    ui->plot->replot();
 }
 
 void Window::onDoubleSliderMoved(int val)
@@ -324,4 +364,16 @@ void Window::onDoubleSliderAltMoved(int val)
     ui->plot->graph(3)->setData(keys, values);
 
     ui->plot->replot();
+}
+
+void Window::clearAll()
+{
+    for (int i = 0; i < ui->plot->graphCount(); i++)
+    {
+        ui->plot->graph(i)->clearData();
+        ui->spin_dispersion_from->setValue(ui->spin_from->value());
+        ui->spin_dispersion_to->setValue(ui->spin_to->value());
+        ui->lb_dispersion->setText("");
+        ui->text_dispersions->clear();
+    }
 }
