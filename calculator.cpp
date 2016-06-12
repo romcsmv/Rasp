@@ -101,15 +101,17 @@ void Calculator::start()
         }
     }
 
-    foreach(const QString &const_buf, lines)
+    foreach(QString buf, lines)
     {
         count++;
         emit progress(count, lines.size());
 
-        QString buf(const_buf);
         QTextStream s1(&buf);
         group1 tmp;
         s1 >> tmp.a >> tmp.b >> tmp.c;
+
+        tmp.b *= u_coef;
+        tmp.c *= i_coef;
 
         list1.push_front(tmp);
 

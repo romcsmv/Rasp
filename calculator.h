@@ -17,6 +17,8 @@ public:
                  double to_,
                  double avg_);
 
+    double u_coef = 100;
+    double i_coef = 1000;
     const QVector<double> &getT() const { return T; }
     const QVector<double> &getU() const { return U; }
     const QVector<double> &getI() const { return I; }

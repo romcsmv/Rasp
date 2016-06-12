@@ -22,10 +22,31 @@ Window::Window(QWidget *parent)
     calc_thread->start();
 
     ui->setupUi(this);
-    for (int i=0; i < 6; i++)
+
+    ui->plot->addGraph();
+    ui->plot->addGraph(ui->plot->xAxis, ui->plot->yAxis2);
+    ui->plot->yAxis2->setVisible(true);
+    ui->plot->xAxis->setLabel("t");
+    ui->plot->yAxis->setLabel("U");
+    ui->plot->yAxis2->setLabel("I");
+    connect(ui->plot->yAxis, static_cast<void(QCPAxis::*)(const QCPRange &, const QCPRange &)>(&QCPAxis::rangeChanged),  [this] (const QCPRange &newRange, const QCPRange &oldRange)
+    {
+        double scale_coef = ui->plot->yAxis2->range().size() / oldRange.size();
+
+        double d_size = newRange.size() / oldRange.size();
+        double d_center = (newRange.center() - oldRange.center()) * scale_coef;
+
+        double new_size = ui->plot->yAxis2->range().size() * d_size;
+        double new_center = ui->plot->yAxis2->range().center() + d_center;
+
+        ui->plot->yAxis2->setRange(new_center - new_size/2, new_center + new_size/2);
+    });
+
+    for (int i=2; i < 5; i++)
     {
         ui->plot->addGraph();
     }
+    ui->plot->addGraph(ui->plot->xAxis, ui->plot->yAxis2);
 
     ui->plot->graph(1)->setPen(QPen(QColor("blue")));
     ui->plot->graph(1)->setPen(QPen(QColor("red")));
@@ -132,6 +153,8 @@ void Window::on_btnStart_clicked()
                         ui->spin_from->value(),
                         ui->spin_to->value(),
                         ui->spin_average->value());
+    calculator->u_coef = ui->spin_u_coef->value();
+    calculator->i_coef = ui->spin_i_coef->value();
     calculator->setInvertPolicy(ui->invert_1->isChecked() && ui->invertion->isChecked(), ui->invert_2->isChecked() && ui->invertion->isChecked());
     emit beginCalc();
 }
@@ -178,6 +201,21 @@ void Window::rescale()
     ui->horizontalSlider->blockSignals(false);
 
     ui->plot->rescaleAxes();
+    {
+        auto range_u = ui->plot->yAxis->range();
+        auto u = ui->spin_u_coef->value();
+        auto i = ui->spin_i_coef->value();
+        range_u.lower = std::min(range_u.lower, ui->plot->yAxis2->range().lower * u / i);
+        auto range_i = range_u;
+        {
+            range_i.lower *= i/u;
+            range_i.upper *= i/u;
+        }
+
+        ui->plot->yAxis->setRange(range_u);
+        ui->plot->yAxis2->setRange(range_i);
+    }
+
     ui->plot->replot();
 }
 
