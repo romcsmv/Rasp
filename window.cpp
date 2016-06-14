@@ -8,7 +8,9 @@
 #include <QDebug>
 #include <QEventLoop>
 #include <QFileInfo>
+#include <QPixmap>
 #include <QThread>
+#include <QFileDevice>
 
 #include "calculator.h"
 
@@ -425,5 +427,50 @@ void Window::clearAll()
         ui->spin_dispersion_to->setValue(ui->spin_to->value());
         ui->lb_dispersion->setText("");
         ui->text_dispersions->clear();
+    }
+}
+
+void Window::on_btn_scale_clicked()
+{
+    auto range = ui->plot->yAxis->range();
+    range.lower = 0;
+    range.upper = ui->spin_set_scale->value() * 2;
+    ui->plot->yAxis->setRange(range);
+    ui->plot->replot();
+}
+
+void Window::on_btn_prt_scr_clicked()
+{
+    QRect new_rect = ui->plot->rect();
+    new_rect.setHeight(new_rect.height() * ui->spin_prt_scr_part->value());
+
+    QPixmap pixmap(new_rect.size());
+    new_rect.moveTop(ui->plot->height() - new_rect.height());
+
+    ui->plot->render(&pixmap, QPoint(), new_rect);
+    static QFileDialog *file_save_dialog = nullptr;
+    if (!file_save_dialog)
+    {
+        file_save_dialog = new QFileDialog(this, tr("Save srint screen As..."), QStandardPaths::standardLocations(QStandardPaths::DesktopLocation).first());
+        file_save_dialog->setFileMode(QFileDialog::AnyFile);
+        file_save_dialog->setOption(QFileDialog::ShowDirsOnly, false);
+        file_save_dialog->setOption(QFileDialog::DontResolveSymlinks, true);
+        file_save_dialog->setAcceptMode(QFileDialog::AcceptSave);
+        file_save_dialog->setLabelText(QFileDialog::Accept, tr("Save"));
+        file_save_dialog->setNameFilter("Jpeg files (*.jpg *.jpeg)");
+        file_save_dialog->selectFile("Print.jpeg");
+    }
+    if (file_save_dialog->exec())
+    {
+        QString filename = file_save_dialog->selectedFiles().first();
+        if (QFile::exists(filename))
+        {
+            QFile::remove(filename);
+        }
+        QFile save_file(filename);
+        if (!save_file.open(QFile::ReadWrite))
+            QMessageBox::critical(this, "Error", "Cannot create file!");
+        if (!pixmap.save(&save_file, "JPEG"))
+            QMessageBox::critical(this, "Error", "Cannot save screen shoot!");
     }
 }

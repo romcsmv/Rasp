@@ -38,6 +38,10 @@ private slots:
     void onDoubleSliderMoved(int val);
     void onDoubleSliderAltMoved(int val);
 
+    void on_btn_scale_clicked();
+
+    void on_btn_prt_scr_clicked();
+
 private:
     void clearAll();
 
