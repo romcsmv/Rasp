@@ -51,6 +51,7 @@ public slots:
     void hideSelectorSlider();
 
     void setPlotData(int plot, const QVector<double> &x, const QVector<double> &y);
+    void showPlotAsDots(int plot);
 
     void setYAxisScale(double scale);
 

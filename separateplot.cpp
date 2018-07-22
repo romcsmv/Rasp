@@ -147,7 +147,6 @@ void SeparatePlot::clearAll()
 {
     for (int i = 0; i < ui->plot->graphCount(); i++)
         ui->plot->graph(i)->clearData();
-    ui->plot->replot();
 }
 
 void SeparatePlot::replot()
@@ -168,6 +167,12 @@ void SeparatePlot::hideSelectorSlider()
 void SeparatePlot::setPlotData(int plot, const QVector<double> &x, const QVector<double> &y)
 {
     ui->plot->graph(plot)->setData(x, y);
+}
+
+void SeparatePlot::showPlotAsDots(int plot)
+{
+    ui->plot->graph(plot)->setLineStyle(QCPGraph::lsNone);
+    ui->plot->graph(plot)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 4));
 }
 
 void SeparatePlot::setYAxisScale(double scale)

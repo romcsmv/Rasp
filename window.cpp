@@ -26,18 +26,17 @@ Window::Window(QWidget *parent)
     ui->setupUi(this);
 
     ui->plot->setAxisLabels("t", "U", "I");
+    ui->plot->set_x_axis_density(ui->x_axis_density->value());
+    connect(ui->x_axis_density, &QSlider::valueChanged, ui->plot, &SeparatePlot::set_x_axis_density);
+
+    connect(ui->plot, &SeparatePlot::plotSelectionLeftChanged, this, &Window::onPlotSelectionLeft);
+    connect(ui->plot, &SeparatePlot::plotSelectionRightChanged, this, &Window::onPlotSelectionRight);
 
     connect(this, SIGNAL(beginCalc()), calculator, SLOT(start()));
     connect(calculator, SIGNAL(progress(int,int)), this, SLOT(onProgress(int,int)));
     connect(calculator, SIGNAL(done()), this, SLOT(onDone()));
     connect(ui->allow_save_to_file, &QCheckBox::toggled, ui->output_filename, &QLineEdit::setEnabled);
     connect(ui->allow_save_to_file, &QCheckBox::toggled, calculator, &Calculator::setAllowOutToFile);
-
-    connect(ui->x_axis_density, &QSlider::valueChanged, ui->plot, &SeparatePlot::set_x_axis_density);
-    ui->plot->set_x_axis_density(ui->x_axis_density->value());
-
-    connect(ui->plot, &SeparatePlot::plotSelectionLeftChanged, this, &Window::onPlotSelectionLeft);
-    connect(ui->plot, &SeparatePlot::plotSelectionRightChanged, this, &Window::onPlotSelectionRight);
 
 
     connect(ui->chck_dispersion_select, &QCheckBox::toggled, this, [this] (bool checked) {
@@ -82,12 +81,16 @@ Window::Window(QWidget *parent)
 
 Window::~Window()
 {
-    QEventLoop loop;
+    delete ui_plot;
 
-    connect(calculator, SIGNAL(destroyed(QObject*)), calc_thread, SLOT(quit()));
-    connect(calc_thread, SIGNAL(finished()), &loop, SLOT(quit()));
-    QMetaObject::invokeMethod(calculator, "deleteLater", Qt::QueuedConnection);
-    loop.exec();
+    {
+        QEventLoop loop;
+
+        connect(calculator, SIGNAL(destroyed(QObject*)), calc_thread, SLOT(quit()));
+        connect(calc_thread, SIGNAL(finished()), &loop, SLOT(quit()));
+        QMetaObject::invokeMethod(calculator, "deleteLater", Qt::QueuedConnection);
+        loop.exec();
+    }
 
     delete ui;
 }
@@ -122,6 +125,7 @@ void Window::on_btnStart_clicked()
     }
 
     clearAll();
+    ui->plot->replot();
 
     ui->groupBox->setEnabled(false);
     ui->progressBar->setValue(0);
@@ -193,6 +197,7 @@ void Window::on_fileOpenButton_clicked()
         ui->spin_from->setValue(0);
         ui->spin_to->setValue(100);
         clearAll();
+        ui->plot->replot();
 
         QString out("%1/%2_out.txt");
         ui->output_filename->setText(QDir::cleanPath(out
@@ -305,5 +310,17 @@ void Window::on_btn_prt_scr_clicked()
 
 void Window::on_btn_plot_iu_clicked()
 {
-    //
+    if (!ui_plot)
+    {
+        ui_plot = new SeparatePlot();
+        ui_plot->setAxisLabels("U", "I");
+        ui_plot->set_x_axis_density(ui->x_axis_density->value());
+        ui_plot->showPlotAsDots(0);
+    }
+
+    ui_plot->clearAll();
+    ui_plot->setPlotData(0, calculator->getU(), calculator->getI());
+    ui_plot->rescale();
+    ui_plot->show();
+    ui_plot->raise();
 }

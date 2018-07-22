@@ -10,6 +10,7 @@ class Window;
 class QThread;
 class Calculator;
 class QDoubleSpinBox;
+class SeparatePlot;
 
 class Window : public QMainWindow
 {
@@ -48,6 +49,7 @@ private:
     Ui::Window *ui;
     QThread *calc_thread;
     Calculator *calculator;
+    SeparatePlot *ui_plot = nullptr;
 
     QDoubleSpinBox *select_from = nullptr;
     QDoubleSpinBox *select_to = nullptr;
