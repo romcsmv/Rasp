@@ -2,15 +2,15 @@
 #include "ui_window.h"
 
 #include <QApplication>
-#include <QMessageBox>
-#include <QFileDialog>
-
 #include <QDebug>
 #include <QEventLoop>
-#include <QFileInfo>
-#include <QPixmap>
-#include <QThread>
 #include <QFileDevice>
+#include <QFileDialog>
+#include <QFileInfo>
+#include <QMessageBox>
+#include <QPixmap>
+#include <QStandardPaths>
+#include <QThread>
 
 #include "calculator.h"
 
@@ -25,65 +25,20 @@ Window::Window(QWidget *parent)
 
     ui->setupUi(this);
 
-    {
-        auto font = ui->plot->font();
-        font.setPointSize(18);
-        ui->plot->setFont(font);
-        ui->plot->xAxis->setTickLabelFont(font);
-        ui->plot->yAxis->setTickLabelFont(font);
-        ui->plot->yAxis2->setTickLabelFont(font);
-        font.setItalic(true);
-        ui->plot->xAxis->setLabelFont(font);
-        ui->plot->yAxis->setLabelFont(font);
-        ui->plot->yAxis2->setLabelFont(font);
-    }
-    ui->plot->addGraph();
-    ui->plot->addGraph(ui->plot->xAxis, ui->plot->yAxis2);
-    ui->plot->yAxis2->setVisible(true);
-    ui->plot->xAxis->setLabel("t");
-    ui->plot->yAxis->setLabel("U");
-    ui->plot->yAxis2->setLabel("I");
-    connect(ui->plot->yAxis, static_cast<void(QCPAxis::*)(const QCPRange &, const QCPRange &)>(&QCPAxis::rangeChanged),  [this] (const QCPRange &newRange, const QCPRange &oldRange)
-    {
-        double scale_coef = ui->plot->yAxis2->range().size() / oldRange.size();
-
-        double d_size = newRange.size() / oldRange.size();
-        double d_center = (newRange.center() - oldRange.center()) * scale_coef;
-
-        double new_size = ui->plot->yAxis2->range().size() * d_size;
-        double new_center = ui->plot->yAxis2->range().center() + d_center;
-
-        ui->plot->yAxis2->setRange(new_center - new_size/2, new_center + new_size/2);
-    });
-
-    for (int i=2; i < 5; i++)
-    {
-        ui->plot->addGraph();
-    }
-    ui->plot->addGraph(ui->plot->xAxis, ui->plot->yAxis2);
-
-    ui->plot->graph(1)->setPen(QPen(QColor("blue")));
-    ui->plot->graph(1)->setPen(QPen(QColor("red")));
-    ui->plot->xAxis->setAutoTickCount(ui->x_axis_density->value());
-
-    ui->plot->graph(2)->setPen(QPen(QColor("green")));
-    ui->plot->graph(3)->setPen(QPen(QColor("green")));
-
-    ui->plot->graph(4)->setPen(QPen(QBrush(QColor("lime")), 2));
-    ui->plot->graph(5)->setPen(QPen(QBrush(QColor("orange")), 2));
-
-    ui->plot->setInteraction(QCP::iRangeDrag);
-    ui->plot->setInteraction(QCP::iRangeZoom);
+    ui->plot->setAxisLabels("t", "U", "I");
 
     connect(this, SIGNAL(beginCalc()), calculator, SLOT(start()));
     connect(calculator, SIGNAL(progress(int,int)), this, SLOT(onProgress(int,int)));
     connect(calculator, SIGNAL(done()), this, SLOT(onDone()));
-    connect(ui->btnRescale, SIGNAL(released()), this, SLOT(rescale()));
     connect(ui->allow_save_to_file, &QCheckBox::toggled, ui->output_filename, &QLineEdit::setEnabled);
     connect(ui->allow_save_to_file, &QCheckBox::toggled, calculator, &Calculator::setAllowOutToFile);
 
-    connect(ui->slider_double, &DoubleSlider::valueChanged, this, &Window::onDoubleSliderMoved);
-    connect(ui->slider_double, &DoubleSlider::altValueChanged, this, &Window::onDoubleSliderAltMoved);
+    connect(ui->x_axis_density, &QSlider::valueChanged, ui->plot, &SeparatePlot::set_x_axis_density);
+    ui->plot->set_x_axis_density(ui->x_axis_density->value());
+
+    connect(ui->plot, &SeparatePlot::plotSelectionLeftChanged, this, &Window::onPlotSelectionLeft);
+    connect(ui->plot, &SeparatePlot::plotSelectionRightChanged, this, &Window::onPlotSelectionRight);
+
 
     connect(ui->chck_dispersion_select, &QCheckBox::toggled, this, [this] (bool checked) {
         ui->chck_range_select->blockSignals(true);
@@ -94,11 +49,11 @@ Window::Window(QWidget *parent)
         {
             select_from = ui->spin_dispersion_from;
             select_to = ui->spin_dispersion_to;
-            ui->slider_double->show();
+            ui->plot->showSelectorSlider();
         }
         else
         {
-            ui->slider_double->hide();
+            ui->plot->hideSelectorSlider();
         }
     });
 
@@ -111,18 +66,17 @@ Window::Window(QWidget *parent)
         {
             select_from = ui->spin_from;
             select_to = ui->spin_to;
-            ui->slider_double->show();
+            ui->plot->showSelectorSlider();
         }
         else
         {
-            ui->slider_double->hide();
+            ui->plot->hideSelectorSlider();
         }
     });
 
     ui->chck_dispersion_select->setChecked(true);
 
     ui->allow_save_to_file->setChecked(false);
-    ui->btnRescale->setIcon(qApp->style()->standardIcon(QStyle::SP_BrowserReload));
     ui->progressBar->hide();
 }
 
@@ -136,6 +90,16 @@ Window::~Window()
     loop.exec();
 
     delete ui;
+}
+
+void Window::onPlotSelectionLeft(double value)
+{
+    select_from->setValue(value);
+}
+
+void Window::onPlotSelectionRight(double value)
+{
+    select_to->setValue(value);
 }
 
 
@@ -187,78 +151,20 @@ void Window::onProgress(int current, int max)
             current += max;
         }
     }
-    ui->progressBar->setValue(double(current)/max*100);
+    ui->progressBar->setValue(int(double(current)/max*100.));
     ui->progressBar->update();
 }
 
 void Window::onDone()
 {
-    ui->plot->graph(0)->setData(calculator->getT(), calculator->getU());
-    ui->plot->graph(1)->setData(calculator->getT(), calculator->getI());
+    ui->plot->setPlotData(0, calculator->getT(), calculator->getU());
+    ui->plot->setPlotData(1, calculator->getT(), calculator->getI());
 
-    rescale();
+    ui->plot->rescale();
 
     ui->groupBox->setEnabled(true);
     ui->progressBar->setValue(100);
     ui->progressBar->hide();
-}
-
-void Window::rescale()
-{
-    ui->verticalSlider->blockSignals(true);
-    ui->horizontalSlider->blockSignals(true);
-    old_y_slider_scale = 100;
-    old_x_slider_scale = 100;
-    ui->verticalSlider->setValue(100);
-    ui->horizontalSlider->setValue(100);
-    ui->verticalSlider->blockSignals(false);
-    ui->horizontalSlider->blockSignals(false);
-
-    ui->plot->rescaleAxes();
-    {
-        auto range_u = ui->plot->yAxis->range();
-        auto u = ui->spin_u_coef->value();
-        auto i = ui->spin_i_coef->value();
-        range_u.lower = std::min(range_u.lower, ui->plot->yAxis2->range().lower * u / i);
-        auto range_i = range_u;
-        {
-            range_i.lower *= i/u;
-            range_i.upper *= i/u;
-        }
-
-        ui->plot->yAxis->setRange(range_u);
-        ui->plot->yAxis2->setRange(range_i);
-    }
-
-    ui->plot->replot();
-}
-
-void Window::on_verticalSlider_valueChanged(int value)
-{
-    QCPRange range = ui->plot->yAxis->range();
-
-    double real_size = range.size() / old_y_slider_scale;
-    double new_size = real_size * value;
-
-    old_y_slider_scale = value;
-
-    ui->plot->yAxis->setRange(QCPRange(range.center() - new_size / 2, range.center() + new_size / 2));
-    ui->plot->yAxis2->setRange(QCPRange(range.center() - new_size / 2, range.center() + new_size / 2));
-    ui->plot->replot();
-}
-
-void Window::on_horizontalSlider_valueChanged(int value)
-{
-    QCPRange range = ui->plot->xAxis->range();
-
-    double real_size = range.size() / old_x_slider_scale;
-    double new_size = real_size * value;
-
-    old_x_slider_scale = value;
-
-    ui->plot->xAxis->setRange(QCPRange(range.center() - new_size / 2, range.center() + new_size / 2));
-    ui->plot->xAxis2->setRange(QCPRange(range.center() - new_size / 2, range.center() + new_size / 2));
-    ui->plot->replot();
 }
 
 void Window::on_fileOpenButton_clicked()
@@ -284,23 +190,15 @@ void Window::on_fileOpenButton_clicked()
         }
         ui->input_filename->setText(selected.absoluteFilePath());
 
-        ui->plot->graph(0)->clearData();
         ui->spin_from->setValue(0);
         ui->spin_to->setValue(100);
         clearAll();
-        ui->plot->replot();
 
         QString out("%1/%2_out.txt");
         ui->output_filename->setText(QDir::cleanPath(out
                                                      .arg(selected.path())
                                                      .arg(selected.baseName())));
     }
-}
-
-void Window::on_x_axis_density_valueChanged(int value)
-{
-    ui->plot->xAxis->setAutoTickCount(value);
-    ui->plot->replot();
 }
 
 void Window::on_btn_dispersion_clicked()
@@ -362,8 +260,8 @@ void Window::on_btn_dispersion_clicked()
         u_curve.push_back(u_aver(array_t[i]));
         i_curve.push_back(i_aver(array_t[i]));
     }
-    ui->plot->graph(4)->setData(array_t, u_curve);
-    ui->plot->graph(5)->setData(array_t, i_curve);
+    ui->plot->setPlotData(4, array_t, u_curve);
+    ui->plot->setPlotData(5, array_t, i_curve);
 
     double dispersion_u = 0;
     double dispersion_i = 0;
@@ -386,91 +284,26 @@ void Window::on_btn_dispersion_clicked()
     ui->plot->replot();
 }
 
-void Window::onDoubleSliderMoved(int val)
-{
-    QCPRange x_range = ui->plot->xAxis->range();
-    QCPRange y_range = ui->plot->yAxis->range();
-
-    double line_pos = x_range.lower + (x_range.size() * val) / (ui->slider_double->maximum() - ui->slider_double->minimum());
-    select_from->setValue(line_pos);
-
-    QVector<double> keys, values;
-    keys << line_pos << line_pos;
-    values << y_range.lower << y_range.upper;
-    ui->plot->graph(2)->setData(keys, values);
-
-    ui->plot->replot();
-}
-
-void Window::onDoubleSliderAltMoved(int val)
-{
-    QCPRange x_range = ui->plot->xAxis->range();
-    QCPRange y_range = ui->plot->yAxis->range();
-
-    double line_pos = x_range.lower + (x_range.size() * val) / (ui->slider_double->maximum() - ui->slider_double->minimum());
-    select_to->setValue(line_pos);
-
-    QVector<double> keys, values;
-    keys << line_pos << line_pos;
-    values << y_range.lower << y_range.upper;
-    ui->plot->graph(3)->setData(keys, values);
-
-    ui->plot->replot();
-}
-
 void Window::clearAll()
 {
-    for (int i = 0; i < ui->plot->graphCount(); i++)
-    {
-        ui->plot->graph(i)->clearData();
-        ui->spin_dispersion_from->setValue(ui->spin_from->value());
-        ui->spin_dispersion_to->setValue(ui->spin_to->value());
-        ui->lb_dispersion->setText("");
-        ui->text_dispersions->clear();
-    }
+    ui->plot->clearAll();
+    ui->spin_dispersion_from->setValue(ui->spin_from->value());
+    ui->spin_dispersion_to->setValue(ui->spin_to->value());
+    ui->lb_dispersion->setText("");
+    ui->text_dispersions->clear();
 }
 
 void Window::on_btn_scale_clicked()
 {
-    auto range = ui->plot->yAxis->range();
-    range.lower = 0;
-    range.upper = ui->spin_set_scale->value() * 2;
-    ui->plot->yAxis->setRange(range);
-    ui->plot->replot();
+    ui->plot->setYAxisScale(ui->spin_set_scale->value());
 }
 
 void Window::on_btn_prt_scr_clicked()
 {
-    QRect new_rect = ui->plot->rect();
-    new_rect.setHeight(new_rect.height() * ui->spin_prt_scr_part->value());
+    ui->plot->printScr(ui->spin_prt_scr_part->value());
+}
 
-    QPixmap pixmap(new_rect.size());
-    new_rect.moveTop(ui->plot->height() - new_rect.height());
-
-    ui->plot->render(&pixmap, QPoint(), new_rect);
-    static QFileDialog *file_save_dialog = nullptr;
-    if (!file_save_dialog)
-    {
-        file_save_dialog = new QFileDialog(this, tr("Save srint screen As..."), QStandardPaths::standardLocations(QStandardPaths::DesktopLocation).first());
-        file_save_dialog->setFileMode(QFileDialog::AnyFile);
-        file_save_dialog->setOption(QFileDialog::ShowDirsOnly, false);
-        file_save_dialog->setOption(QFileDialog::DontResolveSymlinks, true);
-        file_save_dialog->setAcceptMode(QFileDialog::AcceptSave);
-        file_save_dialog->setLabelText(QFileDialog::Accept, tr("Save"));
-        file_save_dialog->setNameFilter("Jpeg files (*.jpg *.jpeg)");
-        file_save_dialog->selectFile("Print.jpeg");
-    }
-    if (file_save_dialog->exec())
-    {
-        QString filename = file_save_dialog->selectedFiles().first();
-        if (QFile::exists(filename))
-        {
-            QFile::remove(filename);
-        }
-        QFile save_file(filename);
-        if (!save_file.open(QFile::ReadWrite))
-            QMessageBox::critical(this, "Error", "Cannot create file!");
-        if (!pixmap.save(&save_file, "JPEG"))
-            QMessageBox::critical(this, "Error", "Cannot save screen shoot!");
-    }
+void Window::on_btn_plot_iu_clicked()
+{
+    //
 }

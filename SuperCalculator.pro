@@ -11,15 +11,18 @@ TEMPLATE = app
 SOURCES += main.cpp \
     qcustomplot.cpp \
     window.cpp \
-    calculator.cpp
+    calculator.cpp \
+    separateplot.cpp
 
 HEADERS += \
     qcustomplot.h \
     window.h \
-    calculator.h
+    calculator.h \
+    separateplot.h
 
 FORMS += \
-    window.ui
+    window.ui \
+    separateplot.ui
 
 include(double_slider/double_slider.pri)
 

@@ -9,7 +9,7 @@ class Calculator : public QObject
 {
     Q_OBJECT
 public:
-    explicit Calculator(QObject *parent = 0);
+    explicit Calculator(QObject *parent = nullptr);
 
     void setData(const QString &file_in_,
                  const QString &file_out_,
